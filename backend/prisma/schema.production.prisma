@@ -1,0 +1,221 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCTION SCHEMA — PostgreSQL
+// Used for staging / production deployments.
+// Generate client:  npx prisma generate --schema=prisma/schema.production.prisma
+// Push schema:      npx prisma db push --schema=prisma/schema.production.prisma
+// Run migrations:   npx prisma migrate deploy --schema=prisma/schema.production.prisma
+// Seed:             npx ts-node prisma/seed.ts (reads DATABASE_URL from .env)
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------
+// User Management
+// ----------------------------------------------------------------------
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  passwordHash       String              @map("password_hash")
+  role               String              @default("USER")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  profile            UserProfile?
+  onboarding         OnboardingResponse?
+  emissions          EmissionEntry[]
+  scores             CarbonScore[]
+  purchases          OffsetPurchase[]
+  passport           CarbonPassport?
+  insights           Insight[]
+  notifications      Notification[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  fullName  String   @map("full_name")
+  country   String?
+  city      String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model OnboardingResponse {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  country              String
+  lifestylePreference  String   @map("lifestyle_preference")
+  transportHabits      String   @map("transport_habits")
+  electricityEstimate  Float    @map("electricity_estimate")
+  dietPreference       String   @map("diet_preference")
+  travelFrequency      String   @map("travel_frequency")
+  baselineAnnualCo2e   Float    @map("baseline_annual_co2e")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_responses")
+}
+
+// ----------------------------------------------------------------------
+// Emissions & Scoring
+// ----------------------------------------------------------------------
+
+model EmissionCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  factors     EmissionFactor[]
+
+  @@map("emission_categories")
+}
+
+model EmissionFactor {
+  id         String            @id @default(uuid())
+  categoryId String            @map("category_id")
+  name       String
+  value      Float
+  unit       String
+
+  category   EmissionCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@map("emission_factors")
+  @@index([categoryId])
+}
+
+model EmissionEntry {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  sourceType      String   @map("source_type")
+  sourceReference String?  @map("source_reference")
+  category        String
+  activityLabel   String   @map("activity_label")
+  quantity        Float
+  co2eResult      Float    @map("co2e_result")
+  timestamp       DateTime
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emission_entries")
+  @@index([userId, timestamp])
+}
+
+model CarbonScore {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  scoreMode      String   @map("score_mode")
+  monthlyScore   Float    @map("monthly_score")
+  annualEstimate Float    @map("annual_estimate")
+  month          Int
+  year           Int
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("carbon_scores")
+  @@index([userId, year, month])
+}
+
+// ----------------------------------------------------------------------
+// Market & Ledgers
+// ----------------------------------------------------------------------
+
+model OffsetProject {
+  id                String   @id @default(uuid())
+  title             String
+  description       String
+  region            String
+  registryType      String   @map("registry_type")
+  verificationBadge String   @map("verification_badge")
+  pricePerCredit    Float    @map("price_per_credit")
+  availableCredits  Float    @map("available_credits")
+  imageUrl          String   @map("image_url")
+  status            String
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  purchases         OffsetPurchase[]
+
+  @@map("offset_projects")
+  @@index([status, registryType])
+}
+
+model OffsetPurchase {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  projectId       String        @map("project_id")
+  creditsCount    Float         @map("credits_count")
+  totalCost       Float         @map("total_cost")
+  transactionDate DateTime      @default(now()) @map("transaction_date")
+  status          String
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         OffsetProject @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@map("offset_purchases")
+  @@index([userId, transactionDate])
+  @@index([projectId])
+}
+
+// ----------------------------------------------------------------------
+// Passport & Insights
+// ----------------------------------------------------------------------
+
+model CarbonPassport {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  carbonGrade         String   @map("carbon_grade")
+  cumulativeFootprint Float    @map("cumulative_footprint")
+  totalOffsets        Float    @map("total_offsets")
+  netFootprint        Float    @map("net_footprint")
+  isPublic            Boolean  @default(false) @map("is_public")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("carbon_passports")
+}
+
+model Insight {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  insightText String   @map("insight_text")
+  type        String
+  streak      Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("insights")
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId, read])
+}

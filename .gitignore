@@ -1,0 +1,26 @@
+# Node
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files — never commit real secrets
+.env
+.env.production
+.env.local
+
+# SQLite dev database — local only, not for source control
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# Prisma generated client
+backend/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db

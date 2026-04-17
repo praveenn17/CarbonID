@@ -1,0 +1,276 @@
+// ─────────────────────────────────────────────────────────────
+// LOCAL DEV SCHEMA — SQLite (zero-config, no Docker needed)
+// Commands:
+//   npx prisma db push          → apply schema to dev.db
+//   npx prisma generate         → regenerate Prisma client
+//   npx ts-node prisma/seed.ts  → seed reference data
+// For production PostgreSQL see: prisma/schema.production.prisma
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------
+// User Management
+// ----------------------------------------------------------------------
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  passwordHash       String              @map("password_hash")
+  role               String              @default("USER")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  profile            UserProfile?
+  onboarding         OnboardingResponse?
+  emissions          EmissionEntry[]
+  scores             CarbonScore[]
+  purchases          OffsetPurchase[]
+  paymentOrders      PaymentOrder[]
+  passport           CarbonPassport?
+  insights           Insight[]
+  notifications      Notification[]
+  importedTransactions ImportedTransaction[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  fullName  String   @map("full_name")
+  country   String?
+  city      String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model OnboardingResponse {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  country              String
+  lifestylePreference  String   @map("lifestyle_preference")
+  transportHabits      String   @map("transport_habits")
+  electricityEstimate  Float    @map("electricity_estimate")
+  dietPreference       String   @map("diet_preference")
+  travelFrequency      String   @map("travel_frequency")
+  baselineAnnualCo2e   Float    @map("baseline_annual_co2e")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_responses")
+}
+
+// ----------------------------------------------------------------------
+// Emissions & Scoring
+// ----------------------------------------------------------------------
+
+model EmissionCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g. TRANSPORT, UTILITIES, FOOD, TRAVEL
+  description String?
+  factors     EmissionFactor[]
+
+  @@map("emission_categories")
+}
+
+model EmissionFactor {
+  id         String            @id @default(uuid())
+  categoryId String            @map("category_id")
+  name       String            // e.g. "Car Petrol", "Beef"
+  value      Float             // kg CO2 per unit
+  unit       String            // e.g. "km", "kg", "kWh"
+
+  category   EmissionCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@map("emission_factors")
+  @@index([categoryId])
+}
+
+model EmissionEntry {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  sourceType      String   @map("source_type")       // manual, imported
+  sourceReference String?  @map("source_reference")
+  category        String   // transport, food, utilities
+  activityLabel   String   @map("activity_label")
+  quantity        Float    
+  co2eResult      Float    @map("co2e_result")       // Calculated kg CO2e
+  timestamp       DateTime
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emission_entries")
+  @@index([userId, timestamp])
+}
+
+model CarbonScore {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  scoreMode      String   @map("score_mode")       // manual, transaction-derived
+  monthlyScore   Float    @map("monthly_score")
+  annualEstimate Float    @map("annual_estimate")
+  month          Int
+  year           Int
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("carbon_scores")
+  @@index([userId, year, month])
+}
+
+// ----------------------------------------------------------------------
+// Market & Ledgers
+// ----------------------------------------------------------------------
+
+model OffsetProject {
+  id                String   @id @default(uuid())
+  title             String
+  description       String   
+  region            String
+  registryType      String   @map("registry_type")
+  verificationBadge String   @map("verification_badge")
+  pricePerCredit    Float    @map("price_per_credit")
+  availableCredits  Float    @map("available_credits")
+  imageUrl          String   @map("image_url")
+  status            String   // active, funded
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  purchases         OffsetPurchase[]
+  paymentOrders     PaymentOrder[]
+
+  @@map("offset_projects")
+  @@index([status, registryType])
+}
+
+model OffsetPurchase {
+  id                String         @id @default(uuid())
+  userId            String         @map("user_id")
+  projectId         String         @map("project_id")
+  creditsCount      Float          @map("credits_count")
+  totalCost         Float          @map("total_cost")
+  transactionDate   DateTime       @default(now()) @map("transaction_date")
+  status            String         // completed, pending
+  paymentOrderId    String?        @unique @map("payment_order_id") // linked Razorpay payment
+
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project           OffsetProject  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  paymentOrder      PaymentOrder?  @relation(fields: [paymentOrderId], references: [id])
+
+  @@map("offset_purchases")
+  @@index([userId, transactionDate])
+  @@index([projectId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Payments — Razorpay Order Ledger
+// A PaymentOrder is created BEFORE the user pays.
+// OffsetPurchase is created only AFTER payment is verified.
+// ──────────────────────────────────────────────────────────────────────────────
+model PaymentOrder {
+  id                  String         @id @default(uuid())
+  userId              String         @map("user_id")
+  projectId           String         @map("project_id")
+  creditsCount        Float          @map("credits_count")
+  amountPaise         Int            @map("amount_paise")     // amount in smallest currency unit
+  currency            String         @default("INR")
+  razorpayOrderId     String         @unique @map("razorpay_order_id")
+  razorpayPaymentId   String?        @unique @map("razorpay_payment_id")
+  razorpaySignature   String?        @map("razorpay_signature")
+  status              String         @default("pending")     // pending | success | failed
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project             OffsetProject  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  purchase            OffsetPurchase?
+
+  @@map("payment_orders")
+  @@index([userId, createdAt])
+  @@index([razorpayOrderId])
+}
+
+// ----------------------------------------------------------------------
+// Passport & Insights
+// ----------------------------------------------------------------------
+
+model CarbonPassport {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  carbonGrade         String   @map("carbon_grade")      // A, B, C, D, etc.
+  cumulativeFootprint Float    @map("cumulative_footprint")
+  totalOffsets        Float    @map("total_offsets")
+  netFootprint        Float    @map("net_footprint")
+  isPublic            Boolean  @default(false) @map("is_public")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("carbon_passports")
+}
+
+model Insight {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  insightText String   @map("insight_text") 
+  type        String   // suggestion, alert, streak
+  streak      Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("insights")
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String   
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId, read])
+}
+
+// ----------------------------------------------------------------------
+// Data Imports
+// ----------------------------------------------------------------------
+
+model ImportedTransaction {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  date             DateTime
+  description      String
+  amount           Float
+  detectedCategory String   @map("detected_category") // e.g., Transport, Food
+  detectedFactor   String?  @map("detected_factor")
+  estimatedCo2e    Float    @map("estimated_co2e")
+  sourceType       String   @default("CSV") @map("source_type")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("imported_transactions")
+  @@index([userId, date])
+}
