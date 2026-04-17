@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 
 export default function MainLayout({ children, title, subtitle }: { children: ReactNode, title: string, subtitle: string }) {
