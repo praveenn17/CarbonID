@@ -222,24 +222,52 @@ model Notification {
   @@index([userId, read])
 }
 
+// ----------------------------------------------------------------------
+// Data Imports
+// ----------------------------------------------------------------------
+
 model ImportedTransaction {
-  id          String   @id @default(uuid())
-  userId      String
-  date        String
-  description String
-  amount      Float
-  category    String
-  hashKey     String   @unique
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  date             DateTime
+  description      String
+  amount           Float
+  detectedCategory String   @map("detected_category") // e.g., Transport, Food
+  detectedFactor   String?  @map("detected_factor")
+  estimatedCo2e    Float    @map("estimated_co2e")
+  sourceType       String   @default("CSV") @map("source_type")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("imported_transactions")
+  @@index([userId, date])
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Payments — Razorpay Order Ledger
+// A PaymentOrder is created BEFORE the user pays.
+// OffsetPurchase is created only AFTER payment is verified.
+// ──────────────────────────────────────────────────────────────────────────────
 model PaymentOrder {
-  id        String   @id @default(uuid())
-  userId    String
-  amount    Float
-  currency  String
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id                  String         @id @default(uuid())
+  userId              String         @map("user_id")
+  projectId           String         @map("project_id")
+  creditsCount        Float          @map("credits_count")
+  amountPaise         Int            @map("amount_paise")     // amount in smallest currency unit
+  currency            String         @default("INR")
+  razorpayOrderId     String         @unique @map("razorpay_order_id")
+  razorpayPaymentId   String?        @unique @map("razorpay_payment_id")
+  razorpaySignature   String?        @map("razorpay_signature")
+  status              String         @default("pending")     // pending | success | failed
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project             OffsetProject  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  purchase            OffsetPurchase?
+
+  @@map("payment_orders")
+  @@index([userId, createdAt])
+  @@index([razorpayOrderId])
 }
