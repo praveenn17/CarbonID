@@ -141,33 +141,36 @@ model CarbonScore {
 model OffsetProject {
   id                String   @id @default(uuid())
   title             String
-  description       String
+  description       String   
   region            String
   registryType      String   @map("registry_type")
   verificationBadge String   @map("verification_badge")
   pricePerCredit    Float    @map("price_per_credit")
   availableCredits  Float    @map("available_credits")
   imageUrl          String   @map("image_url")
-  status            String
+  status            String   // active, funded
   createdAt         DateTime @default(now()) @map("created_at")
 
   purchases         OffsetPurchase[]
+  paymentOrders     PaymentOrder[]
 
   @@map("offset_projects")
   @@index([status, registryType])
 }
 
 model OffsetPurchase {
-  id              String        @id @default(uuid())
-  userId          String        @map("user_id")
-  projectId       String        @map("project_id")
-  creditsCount    Float         @map("credits_count")
-  totalCost       Float         @map("total_cost")
-  transactionDate DateTime      @default(now()) @map("transaction_date")
-  status          String
+  id                String         @id @default(uuid())
+  userId            String         @map("user_id")
+  projectId         String         @map("project_id")
+  creditsCount      Float          @map("credits_count")
+  totalCost         Float          @map("total_cost")
+  transactionDate   DateTime       @default(now()) @map("transaction_date")
+  status            String         // completed, pending
+  paymentOrderId    String?        @unique @map("payment_order_id") // linked Razorpay payment
 
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project         OffsetProject @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project           OffsetProject  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  paymentOrder      PaymentOrder?  @relation(fields: [paymentOrderId], references: [id])
 
   @@map("offset_purchases")
   @@index([userId, transactionDate])
