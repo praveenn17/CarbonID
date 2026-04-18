@@ -24,10 +24,6 @@ export default function Onboarding() {
     queryKey: ['onboardingCheck'],
     queryFn: () => fetchApi('/onboarding'),
     retry: false,
-    onSuccess: () => {
-      // User already has onboarding data → send to dashboard
-      navigate('/dashboard', { replace: true });
-    },
     // onError means 404 → not onboarded yet → stay on page (do nothing)
   });
 

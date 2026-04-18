@@ -1,4 +1,3 @@
-import React, { useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card } from '../components/ui/Card';
 import { Fingerprint, Share2, Award, Download, BadgeCheck, Leaf, TrendingDown, ShoppingBag } from 'lucide-react';
@@ -7,20 +6,20 @@ import { fetchApi, useAuthStore } from '../store/authStore';
 
 const GRADE_COLORS: Record<string, string> = {
   'A+': 'text-emerald-400',
-  'A':  'text-emerald-400',
-  'B':  'text-teal-400',
-  'C':  'text-yellow-400',
-  'D':  'text-orange-400',
-  'F':  'text-rose-400',
+  'A': 'text-emerald-400',
+  'B': 'text-teal-400',
+  'C': 'text-yellow-400',
+  'D': 'text-orange-400',
+  'F': 'text-rose-400',
 };
 
 const GRADE_LABELS: Record<string, string> = {
   'A+': 'Carbon Champion — Well below 1.5°C target',
-  'A':  'Leading — Below global target',
-  'B':  'Progressing — Near 2°C pathway',
-  'C':  'Average — Global average range',
-  'D':  'Above Average — Needs reduction',
-  'F':  'High Impact — Urgent action needed',
+  'A': 'Leading — Below global target',
+  'B': 'Progressing — Near 2°C pathway',
+  'C': 'Average — Global average range',
+  'D': 'Above Average — Needs reduction',
+  'F': 'High Impact — Urgent action needed',
 };
 
 export default function Passport() {

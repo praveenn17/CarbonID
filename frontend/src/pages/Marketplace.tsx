@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card } from '../components/ui/Card';
 import {
@@ -106,7 +105,7 @@ export default function Marketplace() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Could not generate receipt');
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -327,8 +326,8 @@ export default function Marketplace() {
                 {checkout.state === 'error' && (
                   <div className="flex flex-col gap-2 p-3 rounded-xl bg-slate-900/80 border border-rose-500/30 text-rose-400 text-xs text-left">
                     <div className="flex items-start gap-2">
-                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                       <span className="leading-relaxed font-medium">{checkout.message}</span>
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span className="leading-relaxed font-medium">{checkout.message}</span>
                     </div>
                   </div>
                 )}
@@ -355,8 +354,8 @@ export default function Marketplace() {
                     disabled={isDisabled}
                     onClick={() => handleBuy(project, qty)}
                     className={`w-full py-2.5 rounded-xl text-white font-semibold text-sm transition-all shadow-lg flex items-center justify-center gap-2
-                      ${checkout.state === 'error' 
-                        ? 'bg-slate-700 hover:bg-slate-600 shadow-none' 
+                      ${checkout.state === 'error'
+                        ? 'bg-slate-700 hover:bg-slate-600 shadow-none'
                         : 'bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 shadow-emerald-500/20'}`}
                   >
                     {checkout.state === 'creating' && <><Loader2 className="w-4 h-4 animate-spin" /> Creating order…</>}
@@ -364,7 +363,7 @@ export default function Marketplace() {
                     {checkout.state === 'verifying' && <><Loader2 className="w-4 h-4 animate-spin" /> Verifying payment…</>}
                     {(checkout.state === 'idle' || checkout.state === 'error') && (
                       <>
-                        <CreditCard className="w-4 h-4" /> 
+                        <CreditCard className="w-4 h-4" />
                         {checkout.state === 'error' ? 'Retry Payment' : `Pay ${qty}t · ₹${costINR}`}
                       </>
                     )}
@@ -385,9 +384,9 @@ export default function Marketplace() {
 
         {ordersHistory && ordersHistory.length > 0 ? (
           <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
-             {ordersHistory.slice(0, 5).map((order: any, idx: number) => {
-               const costUSD = ((order.amountPaise / 100) / 83).toFixed(2);
-               return (
+            {ordersHistory.slice(0, 5).map((order: any, idx: number) => {
+              const costUSD = ((order.amountPaise / 100) / 83).toFixed(2);
+              return (
                 <div key={order.id} className={`flex items-center justify-between p-4 ${idx !== 0 ? 'border-t border-slate-800/50' : ''}`}>
                   <div className="flex items-center gap-3">
                     {order.status === 'success' && <CheckCircle2 className="w-8 h-8 text-emerald-500 p-1.5 bg-emerald-500/10 rounded-full" />}
@@ -401,10 +400,9 @@ export default function Marketplace() {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm font-bold text-slate-200">${costUSD}</p>
-                      <p className={`text-xs font-semibold capitalize ${
-                         order.status === 'success' ? 'text-emerald-400' :
-                         order.status === 'failed' ? 'text-rose-400' : 'text-amber-400'
-                      }`}>
+                      <p className={`text-xs font-semibold capitalize ${order.status === 'success' ? 'text-emerald-400' :
+                          order.status === 'failed' ? 'text-rose-400' : 'text-amber-400'
+                        }`}>
                         {order.status}
                       </p>
                     </div>
@@ -419,12 +417,12 @@ export default function Marketplace() {
                     )}
                   </div>
                 </div>
-               );
-             })}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12 border border-slate-800 border-dashed rounded-2xl text-slate-500 text-sm">
-             No payment history yet.
+            No payment history yet.
           </div>
         )}
       </div>

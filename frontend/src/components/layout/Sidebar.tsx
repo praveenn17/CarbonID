@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Leaf, LayoutDashboard, ShoppingBag, Fingerprint, LogOut, FileSpreadsheet } from 'lucide-react';
 import { logoutAndClear } from '../../store/authStore';
@@ -35,16 +34,15 @@ export default function Sidebar() {
           {links.map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname.includes(link.path);
-            
+
             return (
               <Link
                 key={link.name}
                 to={link.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-                  isActive 
-                    ? 'bg-emerald-500/10 text-emerald-400' 
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${isActive
+                    ? 'bg-emerald-500/10 text-emerald-400'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                }`}
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 {link.name}
