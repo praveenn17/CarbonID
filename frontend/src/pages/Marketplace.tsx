@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card } from '../components/ui/Card';
 import {
@@ -401,7 +402,7 @@ export default function Marketplace() {
                     <div className="text-right">
                       <p className="text-sm font-bold text-slate-200">${costUSD}</p>
                       <p className={`text-xs font-semibold capitalize ${order.status === 'success' ? 'text-emerald-400' :
-                          order.status === 'failed' ? 'text-rose-400' : 'text-amber-400'
+                        order.status === 'failed' ? 'text-rose-400' : 'text-amber-400'
                         }`}>
                         {order.status}
                       </p>

@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card } from '../components/ui/Card';
 import { Fingerprint, Share2, Award, Download, BadgeCheck, Leaf, TrendingDown, ShoppingBag } from 'lucide-react';
