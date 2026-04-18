@@ -36,6 +36,8 @@ model User {
   passport           CarbonPassport?
   insights           Insight[]
   notifications      Notification[]
+  importedTransactions ImportedTransaction[]
+  paymentOrders        PaymentOrder[]
 
   @@map("users")
 }
@@ -218,4 +220,26 @@ model Notification {
 
   @@map("notifications")
   @@index([userId, read])
+}
+
+model ImportedTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  date        String
+  description String
+  amount      Float
+  category    String
+  hashKey     String   @unique
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model PaymentOrder {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  currency  String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
