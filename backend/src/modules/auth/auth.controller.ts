@@ -47,6 +47,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       }
     });
 
+    // Create initial CarbonScore based on current schema
+    await prisma.carbonScore.create({
+      data: {
+        userId: user.id,
+        scoreMode: 'manual',
+        monthlyScore: 100, // Matching your 'score: 100' intent
+        annualEstimate: 1200,
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+      }
+    });
+
+    // Create initial CarbonPassport based on current schema
+    await prisma.carbonPassport.create({
+      data: {
+        userId: user.id,
+        carbonGrade: 'C', // Matches A/B/C/D mapping instead of Bronze
+        cumulativeFootprint: 0,
+        totalOffsets: 0,
+        netFootprint: 0,
+      }
+    });
+
     const token = generateAccessToken(user.id, user.role);
 
     res.status(201).json({
