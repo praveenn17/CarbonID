@@ -1,97 +1,111 @@
-# CarbonID — Climate Action Platform
+# 🌱 CarbonID — Climate Action Platform
 
-CarbonID is a consumer climate-tech platform that helps users measure their carbon footprint, understand major emission sources, take action through verified micro-offset purchases, and maintain a shareable carbon passport.
+ **Track. Understand. Offset. Act.**
+
+CarbonID is a full-stack consumer climate-tech platform that helps users measure their carbon footprint, understand major emission sources, take action through verified micro-offset purchases, and maintain a shareable Carbon Passport.
+
+🔗 **Live App**: [https://carbon-id-olive.vercel.app](https://carbon-id-olive.vercel.app)
+
+---
+
+## Features
+
+-  **Authentication** — Secure JWT-based login & registration
+-  **Dashboard** — Real-time carbon footprint analytics with charts
+-  **Data Imports** — Drag-and-drop CSV upload with smart duplicate detection
+-  **Marketplace** — Browse & purchase verified carbon offset projects via Razorpay
+-  **Carbon Passport** — Shareable personal carbon identity card
+-  **AI Insights** — Emission category breakdown and personalized recommendations
+-  **Manual Activity Logging** — Log transport, food, utilities, and more
+
+---
 
 ## Architecture
 
-*   **Frontend**: React (Vite), Tailwind CSS, Zustand, React Query, Recharts.
-*   **Backend**: Node.js, Express, Prisma.
-*   **Database**: SQLite (Local Dev) / PostgreSQL (Production).
-*   **Deployment**: Docker, Nginx.
+| Layer | Technology |
+|---|---|
+| Frontend | React (Vite), TypeScript, Tailwind CSS, Zustand, React Query, Recharts |
+| Backend | Node.js, Express.js, Prisma ORM |
+| Database | SQLite (Local Dev) / PostgreSQL via Neon (Production) |
+| Payments | Razorpay |
+| Deployment | Vercel (Frontend) + Render (Backend) + Neon (DB) |
 
-## 1. Local Development (SQLite)
-The easiest way to develop locally is using the zero-config SQLite setup. No Docker required.
+---
 
-### Setup
-\`\`\`bash
-# 1. Install dependencies
+## Deployment
+
+| Service | URL |
+|---|---|
+| 🌐 Frontend (Vercel) | [carbon-id-olive.vercel.app](https://carbon-id-olive.vercel.app) |
+| ⚙️ Backend (Render) | [carbonid-backend.onrender.com](https://carbonid-backend.onrender.com) |
+| 🗄️ Database (Neon) | PostgreSQL — Neon Serverless |
+
+---
+
+## Project Structure
+carbonID/
+|
+|-- frontend/
+|   |-- src/
+|   |   |-- pages/           Route-level components
+|   |   |-- components/      Reusable UI components
+|   |   └-- stores/          Zustand state management
+|   └-- vercel.json          SPA routing config
+|
+└-- backend/
+    |-- src/
+    |   └-- modules/
+    |       |-- auth/            JWT authentication
+    |       |-- emissions/       Emission logging
+    |       |-- imports/         CSV import pipeline
+    |       |-- payments/        Razorpay integration
+    |       |-- passport/        Carbon Passport
+    |       └-- carbon-score/
+    └-- prisma/
+        |-- schema.prisma              SQLite local dev
+        └-- schema.production.prisma   PostgreSQL production
+
+
+## 🛠️ Local Development (SQLite)
+
+### 1. Install Dependencies
 cd backend && npm install
 cd ../frontend && npm install
 
-# 2. Setup Database (SQLite is the default)
+### 2. Setup Database
 cd backend
 npm run db:push
 npm run seed
-\`\`\`
 
-### Running Locally
-Open two terminal windows:
-
-**Terminal 1 (Backend API)**
-\`\`\`bash
+### 3. Run Locally
+**Terminal 1 — Backend**
 cd backend
 npm run dev
-# Server running on http://localhost:5000
-\`\`\`
+# http://localhost:5000
 
-**Terminal 2 (Frontend)**
-\`\`\`bash
+**Terminal 2 — Frontend**
 cd frontend
 npm run dev
-# App running on http://localhost:3000
-\`\`\`
+# http://localhost:3000
 
-## 2. Local Production-Like Environment (Docker Compose)
-To test the production build (PostgreSQL, Nginx, built frontend, compiled backend) locally:
 
-\`\`\`bash
-# Build and start all services
-docker compose up --build -d
+### Render Build Command
+npm install --include=dev && npm run generate:prod && npx prisma db push --schema=prisma/schema.production.prisma --accept-data-loss && npm run build
 
-# Check status
-docker compose ps
-\`\`\`
-The frontend will be available at `http://localhost:8080`.
-The backend API handles internal requests.
 
-### Initializing the Docker Database
-Once the containers are running, you need to push the schema and seed the database in the backend container:
-\`\`\`bash
-docker exec -it carbonid-api npm run db:push:prod
-docker exec -it carbonid-api npm run seed
-\`\`\`
+## CSV Import Format
 
-## 3. Production Deployment (PostgreSQL)
+Date,Description,Amount
+2026-04-10,Uber Ride to Office,15.50
+2026-04-12,Zomato Delivery Food,25.00
+2026-04-13,Flight to Mumbai MMT,125.00
 
-For a real production environment (e.g., pulling a managed PostgreSQL instance from Supabase/Neon and deploying on a VPS/Render):
 
-### Environment Variables
-Set the following on your production server (see `backend/.env.production.example`):
-\`\`\`env
-DATABASE_URL="postgresql://user:password@host:5432/db"
-NODE_ENV="production"
-JWT_ACCESS_SECRET="your-strong-secret"
-JWT_REFRESH_SECRET="your-strong-refresh-secret"
-FRONTEND_URL="https://yourdomain.com"
-\`\`\`
+## 🧑‍💻 Built By
 
-### Build and Deploy
-You can use the provided Dockerfiles:
-1.  `backend/Dockerfile`: Multi-stage build producing a lean Node.js image running on port 5000.
-2.  `frontend/Dockerfile`: Multi-stage build producing static assets served by Nginx on port 80.
+**Praveen Kumar** — [@praveenn17](https://github.com/praveenn17)
+{krpraveen2212@gmailcom}
 
-### Database Migrations
-In production, use `migrate deploy` instead of `db push` to apply schema changes safely:
-\`\`\`bash
-cd backend
-npm run generate:prod
-npm run db:migrate:deploy
-npm run seed
-\`\`\`
 
-## Project Structure
-*   `backend/prisma/`
-    *   `schema.prisma`: Schema for local SQLite development.
-    *   `schema.production.prisma`: Schema for PostgreSQL production.
-*   `nginx/default.conf`: Nginx configuration for serving the frontend and proxying `/api` requests.
-*   `docker-compose.yml`: Local production-like test environment.
+## License
+MIT License
